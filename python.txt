@@ -1,0 +1,176 @@
+import pandas as pd
+df=pd.read_csv("new.csv") 
+g=df.groupby('ID')
+for ID, ID_df in g:
+    print(ID)
+    print(ID_df) 
+
+ 
+for x in range(1,8):
+    g.get_group(x).to_csv(str(x) + ".csv",columns=['InvoiceDate','Description', 'Quantity', 'UnitPrice','Country','ID','NewUnitPrice'],index=False)
+
+
+
+for x in range(1,8):
+import statistics as stat 
+modenb = stat.mode(df["UnitPrice"])
+df["UnitPrice"]=modenb
+df["NewUnitPrice"]=df["Quantity"]*df["UnitPrice"]  
+g.get_group(x).to_csv(str(x) + ".csv",columns=['InvoiceDate','Description', 'Quantity', 'UnitPrice','Country','ID','NewUnitPrice'],index=False)
+
+
+
+
+-------------------
+針對產品一筆一筆改
+
+for x in range(1,3):
+    g.get_group(x).to_csv(str(x) + ".csv",columns=['InvoiceDate','Description', 'Quantity', 'UnitPrice','Country','ID','NewUnitPrice'],index=False)
+df = pd.read_csv(str(x) + ".csv") 
+import statistics as stat
+modenb = stat.mode(df["UnitPrice"])
+df["UnitPrice"]=modenb
+df["NewUnitPrice"]=df["Quantity"]*df["UnitPrice"]  
+df.to_csv(str(x) + ".csv",columns=['InvoiceDate','Description', 'Quantity', 'UnitPrice','Country','ID','NewUnitPrice'],index=False)
+
+針對產品一起改(完整迴圈)
+for y in range(1,4027):
+    for z in range(y,y+2):
+        for x in range(y,z):
+            g.get_group(x).to_csv(str(x) + ".csv",columns=['InvoiceDate','Description', 'Quantity', 'UnitPrice','Country','ID','NewUnitPrice'],index=False)
+
+import statistics as stat
+
+z=str(z)
+y=str(y)
+for y in range(1,4027):
+    for z in range(y,y+2):
+        for x in range(y,z):
+            df = pd.read_csv(str(x) + ".csv") 
+            meannb = stat.mean(df["UnitPrice"])
+            df["UnitPrice"] = meannb
+            df["NewUnitPrice"]=df["Quantity"]*df["UnitPrice"]
+            df.to_csv(str(x) + ".csv",columns=['InvoiceDate','Description', 'Quantity', 'UnitPrice','Country','ID','NewUnitPrice'],index=False)
+
+
+#國外地圖
+import pandas as pd
+
+from bokeh.io import output_file, show
+from bokeh.plotting import figure
+from bokeh.tile_providers import STAMEN_TONER
+
+bound = 20000000 # meters
+fig = figure(tools="pan,wheel_zoom,reset,save", x_range=(-bound, bound), y_range=(-bound, bound))
+fig.axis.visible = False
+fig.add_tile(STAMEN_TONER)
+output_file("stamen_toner_plot.html")
+show(fig)
+
+
+
+
+
+
+
+#銷售量
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns #畫統計圖
+
+
+AAPL = pd.read_csv(
+        "nono.csv")
+AAPL.head()
+
+
+import statistics as stat
+g=AAPL.groupby('InvoiceDate')
+for ID, ID_df in g:
+    print(ID)
+    print(ID_df)
+
+g.describe()
+a = round(g.describe())
+a.head()
+
+g.mean()
+b = round(g.mean())
+b.to_csv("average.csv",columns=['Quantity','NewUnitPrice'])
+
+
+
+
+
+
+
+
+#Bokeh
+from bokeh.plotting import figure, output_file, show
+AAPL = pd.read_csv(
+        "average.csv",
+        parse_dates=['InvoiceDate'])
+
+output_file("AAPLdatetime.html")
+
+# create a new plot with a datetime axis type
+p = figure(width=1000, height=750, x_axis_type="datetime")
+
+p.line(AAPL['InvoiceDate'], AAPL['NewUnitPrice'], color='navy', alpha=0.5)
+
+show(p)
+
+
+
+
+
+
+#RFM
+import pandas as pd
+import matplotlib.pyplot
+import datetime as dt
+
+
+df = pd.read_csv('money.csv',sep=',')
+df['order_date'] = pd.to_datetime(df['order_date'])
+df.head()
+
+
+NOW = dt.datetime(2011,12,31)
+
+
+
+
+rfmTable = df.groupby('customer').agg({'order_date': lambda x: (NOW - x.max()).days, # Recency
+                                        'order_id': lambda x: len(x),
+                                        'grand_total': lambda x: x.sum()}) # Monetary Value
+rfmTable['order_date'] = rfmTable['order_date'].astype(int)
+rfmTable.rename(columns={'order_date':'recency','order_id':'frequency','grand_total': 'monetary_value'}, inplace=True)
+rfmTable.head()
+
+
+
+def pct_rank_qcut(series, n):
+    edges = pd.Series([float(i) / n for i in range(n + 1)])
+    f = lambda x: (edges >= x).argmax()
+    return series.rank(pct=1).apply(f)
+
+# 最近消費日期
+rfmTable['rec_dec'] = pct_rank_qcut(rfmTable['recency'], 5)
+
+
+# 頻率
+freq_dec = pct_rank_qcut(rfmTable['frequency'], 5)
+rfmTable['freq_dec'] = 6 - freq_dec
+
+
+# 消費金額
+mv_dec = pct_rank_qcut(rfmTable['monetary_value'], 5)
+rfmTable['mv_dec'] = 6 - mv_dec
+
+
+rfmTable['RFMClass'] = rfmTable.rec_dec.map(str) + rfmTable.freq_dec.map(str) + rfmTable.mv_dec.map(str)
+rfmTable
+
+rfmTable.to_csv("sss.csv",columns=['recency','frequency', 'monetary_value', 'rec_dec','freq_dec','mv_dec','RFMClass'])
